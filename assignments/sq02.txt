@@ -1,0 +1,1 @@
+When is it better to use a shared mutable variable across multiple threads instead of a channel? Does it matter if it's being modified by multiple distributed computers rather than one computer that has spawned multiple threads for the same program?
