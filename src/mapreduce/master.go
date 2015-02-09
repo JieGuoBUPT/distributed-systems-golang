@@ -60,14 +60,15 @@ func (mr *MapReduce) runPhase(operation JobType) {
 	waitGroup.Wait()
 }
 
-func (mr *MapReduce) doJob(args *DoJobArgs, waitGroup *sync.WaitGroup) {
+func (mr *MapReduce) doJobInWaitGroup(args *DoJobArgs, waitGroup *sync.WaitGroup) {
 	worker := <- mr.registerChannel
 	var reply DoJobReply
-	ok := call(worker, "Worker.DoJob", args, & reply)
-	if ok == false {
-		mr.doJob(args, waitGroup)
-	} else {
+	success := call(worker, "Worker.DoJob", args, &reply)
+	if success {
 		waitGroup.Done()
 		mr.registerChannel <- worker
+	} else {
+		// repeat this job, but don't add the failed worker back
+		mr.doJobInWaitGroup(args, waitGroup)
 	}
 }
