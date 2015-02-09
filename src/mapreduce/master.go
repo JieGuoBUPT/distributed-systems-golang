@@ -54,7 +54,7 @@ func (mr *MapReduce) runPhase(operation JobType) {
 			NumOtherPhase: numOtherPhase,
 		}
 
-		go mr.doJob(args, &waitGroup)
+		go mr.doJobInWaitGroup(args, &waitGroup)
 	}
 
 	waitGroup.Wait()
