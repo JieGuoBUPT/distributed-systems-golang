@@ -2,7 +2,7 @@ package mapreduce
 
 import "container/list"
 import "fmt"
-
+import "sync"
 
 type WorkerInfo struct {
 	address string
@@ -29,6 +29,45 @@ func (mr *MapReduce) KillWorkers() *list.List {
 }
 
 func (mr *MapReduce) RunMaster() *list.List {
-	// Your code here
+	mr.runPhase(Map)
+	mr.runPhase(Reduce)
 	return mr.KillWorkers()
+}
+
+func (mr *MapReduce) runPhase(operation JobType) {
+	var numJobs, numOtherPhase int
+	switch operation {
+		case Map:
+			numJobs, numOtherPhase = mr.nMap, mr.nReduce
+		case Reduce:
+			numJobs, numOtherPhase = mr.nReduce, mr.nMap
+	}
+
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(numJobs)
+
+	for i := 0; i < numJobs; i++ {
+		args := &DoJobArgs {
+			File: mr.file,
+			Operation: operation,
+			JobNumber: i,
+			NumOtherPhase: numOtherPhase
+		}
+
+		go mr.doJob(args, &waitGroup)
+	}
+
+	waitGroup.Wait()
+}
+
+func (mr *MapReduce) doJob(args *DoJobArgs, waitGroup *sync.WaitGroup) {
+	worker := < -mr.registerChannel
+	var reply DoJobReply
+	ok := call(worker, "Worker.DoJob", args, & reply)
+	if ok == false {
+		mr.doJob(args, waitGroup)
+	} else {
+		waitGroup.Done()
+		mr.registerChannel < -worker
+	}
 }
