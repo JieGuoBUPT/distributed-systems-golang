@@ -17,13 +17,15 @@ import "unicode"
 // by a mapreduce.KeyValue.
 func Map(value string) *list.List {
 	l := list.New()
+	
 	words := strings.FieldsFunc(value, func(r rune) bool {
 		return !unicode.IsLetter(r)
 	})
-	sort.Strings(words)
+		
 	for _, w := range words {
 		l.PushBack(mapreduce.KeyValue{w, "1"})
 	}
+	
 	return l
 }
 
