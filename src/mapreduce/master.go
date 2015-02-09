@@ -51,7 +51,7 @@ func (mr *MapReduce) runPhase(operation JobType) {
 			File: mr.file,
 			Operation: operation,
 			JobNumber: i,
-			NumOtherPhase: numOtherPhase
+			NumOtherPhase: numOtherPhase,
 		}
 
 		go mr.doJob(args, &waitGroup)
@@ -61,13 +61,13 @@ func (mr *MapReduce) runPhase(operation JobType) {
 }
 
 func (mr *MapReduce) doJob(args *DoJobArgs, waitGroup *sync.WaitGroup) {
-	worker := < -mr.registerChannel
+	worker := <- mr.registerChannel
 	var reply DoJobReply
 	ok := call(worker, "Worker.DoJob", args, & reply)
 	if ok == false {
 		mr.doJob(args, waitGroup)
 	} else {
 		waitGroup.Done()
-		mr.registerChannel < -worker
+		mr.registerChannel <- worker
 	}
 }
