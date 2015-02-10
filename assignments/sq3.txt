@@ -1,0 +1,1 @@
+The paper mentions that Remus can cause significant network delays... Can these delays cause transactions to be lost/dropped as the delay gets larger?
