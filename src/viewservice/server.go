@@ -16,16 +16,59 @@ type ViewServer struct {
 	rpccount int32 // for testing
 	me       string
 
-
 	// Your declarations here.
+	currentView View
+	lastSeen    map[string]time.Time
+	ack         bool
+}
+
+//
+// Increment the view number and replace the servers with what is given
+// returns true if the view was changed, false otherwise
+//
+func (vs *ViewServer) updateView(primary string, backup string) bool {
+	if vs.currentView.Primary != primary || vs.currentView.Backup != backup {
+		vs.currentView = View{
+			Viewnum: vs.currentView.Viewnum + 1,
+			Primary: primary,
+			Backup:  backup
+		}
+
+		vs.ack = false
+		return true
+	}
+
+	return false
 }
 
 //
 // server Ping RPC handler.
 //
 func (vs *ViewServer) Ping(args *PingArgs, reply *PingReply) error {
+	vs.mu.Lock()
+	defer vs.mu.Unlock()
 
-	// Your code here.
+	server, viewnum := args.Me, args.Viewnum
+
+	switch server {
+	case vs.currentView.Primary:
+		if viewnum == vs.currentView.Viewnum {
+			vs.ack = true
+			vs.lastSeen[vs.currentView.Primary] = time.Now()
+		} else {
+			vs.replacePrimary()
+		}
+	case vs.currentView.Backup:
+		if viewnum == vs.currentView.Viewnum {
+			vs.lastSeen[vs.currentView.Backup] = time.Now()
+		} else {
+			vs.removeBackup()
+		}
+	default:
+		vs.addServer(server)
+	}
+
+	reply.View = vs.currentView
 
 	return nil
 }
@@ -34,12 +77,13 @@ func (vs *ViewServer) Ping(args *PingArgs, reply *PingReply) error {
 // server Get() RPC handler.
 //
 func (vs *ViewServer) Get(args *GetArgs, reply *GetReply) error {
+	vs.mu.Lock()
+	defer vs.mu.Unlock()
 
-	// Your code here.
+	reply.View = vs.currentView
 
 	return nil
 }
-
 
 //
 // tick() is called once per PingInterval; it should notice
@@ -47,8 +91,71 @@ func (vs *ViewServer) Get(args *GetArgs, reply *GetReply) error {
 // accordingly.
 //
 func (vs *ViewServer) tick() {
+	vs.mu.Lock()
+	defer vs.mu.Unlock()
 
-	// Your code here.
+	for server, timestamp := range vs.lastSeen {
+		if time.Since(timestamp) >= DeadPings*PingInterval {
+			vs.removeServer(server)
+		}
+	}
+}
+
+//
+// addServer(server string) attemptes to remove the given server,
+// returns true if the view was changed, false otherwise
+// NOTE: only one server and one primary are supported
+//
+func (vs *ViewServer) addServer(server string) bool {
+	if !vs.ack {
+		return false
+	}
+
+	if vs.currentView.Primary == "" {
+		return vs.updateView(server, "")
+	} else if vs.currentView.Backup == "" {
+		return vs.updateView(vs.currentView.Primary, server)
+	}
+
+	return false
+}
+
+//
+// removeServer(server string) attemptes to remove the given server,
+// returns true if the view was changed, false otherwise
+//
+func (vs *ViewServer) removeServer(server string) bool {
+	switch server {
+	case vs.currentView.Primary:
+		return vs.replacePrimary()
+	case vs.currentView.Backup:
+		return vs.removeBackup()
+	}
+	return false
+}
+
+//
+// replacePrimary() attempts to replace the primary with the backup
+// returns true if the view was changed, false otherwise
+//
+func (vs *ViewServer) replacePrimary() bool {
+	if !vs.ack || vs.currentView.Backup == "" {
+		return false
+	}
+
+	return vs.updateView(vs.currentView.Backup, "")
+}
+
+//
+// replacePrimary() attempts to remove the backup
+// returns true if the view was changed, false otherwise
+//
+func (vs *ViewServer) removeBackup() bool {
+	if !vs.ack {
+		return false
+	}
+
+	return vs.updateView(vs.currentView.Primary, "")
 }
 
 //
@@ -70,6 +177,9 @@ func StartServer(me string) *ViewServer {
 	vs := new(ViewServer)
 	vs.me = me
 	// Your vs.* initializations here.
+	vs.currentView = View{Viewnum: 0, Primary: "", Backup: ""}
+	vs.lastSeen = make(map[string]time.Time)
+	vs.ack = true
 
 	// tell net/rpc about our RPC server and handlers.
 	rpcs := rpc.NewServer()
