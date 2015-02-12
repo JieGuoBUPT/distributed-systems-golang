@@ -1,0 +1,1 @@
+Why exactly is O(n^2) a good choice for the `optimal size' of the TLT? Do large companies who own their own datacenters (and have free/cheap intraserver bandwidth) actually use FDS today?

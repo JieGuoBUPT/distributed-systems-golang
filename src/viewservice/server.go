@@ -31,7 +31,7 @@ func (vs *ViewServer) updateView(primary string, backup string) bool {
 		vs.currentView = View{
 			Viewnum: vs.currentView.Viewnum + 1,
 			Primary: primary,
-			Backup:  backup
+			Backup:  backup,
 		}
 
 		vs.ack = false
@@ -113,7 +113,7 @@ func (vs *ViewServer) addServer(server string) bool {
 
 	if vs.currentView.Primary == "" {
 		return vs.updateView(server, "")
-	} else if vs.currentView.Backup == "" {
+	} else if vs.currentView.Backup == "" && vs.currentView.Primary != server {
 		return vs.updateView(vs.currentView.Primary, server)
 	}
 
