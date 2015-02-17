@@ -1,0 +1,8 @@
+Suppose that the acceptors are A, B, and C. A and B are also proposers. How does Paxos ensure that the following sequence of events can't happen? What actually happens, and which value is ultimately chosen?
+
+1. A sends prepare requests with proposal number 1, and gets responses from A, B, and C.
+2. A sends accept(1, "foo") to A and C and gets responses from both. Because a majority accepted, A thinks that "foo" has been chosen. However, A crashes before sending an accept to B.
+3. B sends prepare messages with proposal number 2, and gets responses from B and C.
+4. B sends accept(2, "bar") messages to B and C and gets responses from both, so B thinks that "bar" has been chosen.
+
+Paxos ensures that this cannot happen by having the rule of only allowing committing previously accepted values. Since C previously accepted A's "foo" proposal, it would have replied to B's prepare message letting it know that it had done so. This ensures that B will choose "foo" for its second proposal and that "foo" is the value that is committed.

@@ -1,0 +1,1 @@
+How do modern production uses of Paxos (if there are any) deal with the dueling proposer problem?
