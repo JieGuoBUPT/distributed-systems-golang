@@ -3,14 +3,17 @@ package pbservice
 import "viewservice"
 import "net/rpc"
 import "fmt"
-
+import "time"
 import "crypto/rand"
 import "math/big"
 
-
 type Clerk struct {
 	vs *viewservice.Clerk
+
 	// Your declarations here
+	id   int64
+	seq  int64
+	view viewservice.View
 }
 
 // this may come in handy.
@@ -24,11 +27,14 @@ func nrand() int64 {
 func MakeClerk(vshost string, me string) *Clerk {
 	ck := new(Clerk)
 	ck.vs = viewservice.MakeClerk(me, vshost)
+
 	// Your ck.* initializations here
+	ck.id = nrand()
+	ck.seq = 0
+	ck.view = viewservice.View{Viewnum: 0}
 
 	return ck
 }
-
 
 //
 // call() sends an RPC to the rpcname handler on server srv
@@ -40,7 +46,7 @@ func MakeClerk(vshost string, me string) *Clerk {
 // if call() was not able to contact the server. in particular,
 // the reply's contents are only valid if call() returned true.
 //
-// you should assume that call() will time out and return an
+// You should assume that call() will time out and return an
 // error after a while if it doesn't get a reply from the server.
 //
 // please use call() to send all RPCs, in client.go and server.go.
@@ -71,18 +77,38 @@ func call(srv string, rpcname string,
 // says the key doesn't exist (has never been Put().
 //
 func (ck *Clerk) Get(key string) string {
+	ck.seq++
 
-	// Your code here.
+	args := &GetArgs{Key: key, Seq: ck.seq, ClientId: ck.id, ToBackup: false}
+	var reply GetReply
 
-	return "???"
+	ok := call(ck.view.Primary, "PBServer.Get", args, &reply)
+	for !ok || reply.Err != OK {
+		ck.view, _ = ck.vs.Ping(ck.view.Viewnum)
+		time.Sleep(viewservice.PingInterval)
+
+		ok = call(ck.view.Primary, "PBServer.Get", args, &reply)
+	}
+
+	return reply.Value
 }
 
 //
 // send a Put or Append RPC
 //
-func (ck *Clerk) PutAppend(key string, value string, op string) {
+func (ck *Clerk) PutAppend(key string, value string, op Op) {
+	ck.seq++
 
-	// Your code here.
+	args := &PutAppendArgs{Key: key, Value: value, Op: op, Seq: ck.seq, ClientId: ck.id, ToBackup: false}
+	var reply PutAppendReply
+
+	ok := call(ck.view.Primary, "PBServer.PutAppend", args, &reply)
+	for !ok || reply.Err != OK {
+		ck.view, _ = ck.vs.Ping(ck.view.Viewnum)
+		time.Sleep(viewservice.PingInterval)
+
+		ok = call(ck.view.Primary, "PBServer.PutAppend", args, &reply)
+	}
 }
 
 //
@@ -90,7 +116,7 @@ func (ck *Clerk) PutAppend(key string, value string, op string) {
 // must keep trying until it succeeds.
 //
 func (ck *Clerk) Put(key string, value string) {
-	ck.PutAppend(key, value, "Put")
+	ck.PutAppend(key, value, PutOp)
 }
 
 //
@@ -98,5 +124,5 @@ func (ck *Clerk) Put(key string, value string) {
 // must keep trying until it succeeds.
 //
 func (ck *Clerk) Append(key string, value string) {
-	ck.PutAppend(key, value, "Append")
+	ck.PutAppend(key, value, AppendOp)
 }

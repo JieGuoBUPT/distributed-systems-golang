@@ -11,8 +11,6 @@ import "os"
 import "syscall"
 import "math/rand"
 
-
-
 type PBServer struct {
 	mu         sync.Mutex
 	l          net.Listener
@@ -20,26 +18,103 @@ type PBServer struct {
 	unreliable bool // for testing
 	me         string
 	vs         *viewservice.Clerk
-	// Your declarations here.
+
+	// TODO: Your declarations here.
+	view     viewservice.View
+	state    map[string]string
+	requests map[int64]int64
 }
 
+func (pb *PBServer) IsViewPrimary() bool {
+	return pb.me == pb.view.Primary
+}
+
+func (pb *PBServer) IsViewBackup() bool {
+	return pb.me == pb.view.Backup
+}
+
+func (pb *PBServer) ViewHasBackup() bool {
+	return pb.view.Backup != ""
+}
 
 func (pb *PBServer) Get(args *GetArgs, reply *GetReply) error {
+	pb.mu.Lock()
+	defer pb.mu.Unlock()
+	// fmt.Printf(" get \n")
 
-	// Your code here.
+	// TODO: Your code here.
+
+	if pb.IsViewPrimary() && args.ToBackup {
+		reply.Err = ErrWrongServer
+		return nil
+	} else if pb.IsViewBackup() && !args.ToBackup {
+		reply.Err = ErrWrongServer
+		return nil
+	} else {
+		if val, ok := pb.state[args.Key]; ok {
+			reply.Value = val
+		}
+
+		if pb.IsViewPrimary() && pb.ViewHasBackup() {
+			var backupReply GetReply
+
+			for {
+				ok := call(pb.view.Backup, "PBServer.Get", &GetArgs{Key: args.Key, Seq: args.Seq, ClientId: args.ClientId, ToBackup: true}, &backupReply)
+				if backupReply.Err == "" && ok {
+					break
+				}
+
+				pb.UpdateViewService()
+			}
+		}
+	}
 
 	return nil
 }
-
 
 func (pb *PBServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) error {
+	pb.mu.Lock()
+	defer pb.mu.Unlock()
+	// fmt.Printf(" putappend \n")
 
-	// Your code here.
+	// TODO: Your code here.
 
+	if pb.IsViewPrimary() && args.ToBackup {
+		reply.Err = ErrWrongServer
+		return nil
+	} else if pb.IsViewBackup() && !args.ToBackup {
+		reply.Err = ErrWrongServer
+		return nil
+	} else {
+		if pb.requests[args.ClientId] < args.Seq {
+			if args.Op == AppendOp {
+				previous, exists := pb.state[args.Key]
+				if !exists {
+					previous = ""
+				}
+				args.Value = previous + args.Value
+			}
+
+			pb.requests[args.Seq] = args.Seq
+
+			pb.state[args.Key] = args.Value
+		}
+
+		if pb.IsViewPrimary() && pb.ViewHasBackup() {
+			var backupReply PutAppendReply
+			for {
+				ok := call(pb.view.Backup, "PBServer.PutAppend", &PutAppendArgs{Key: args.Key, Value: args.Value, Op: args.Op, Seq: args.Seq, ClientId: args.ClientId, ToBackup: true}, &backupReply)
+				if backupReply.Err == "" && ok {
+					break
+				}
+
+				pb.UpdateViewService()
+			}
+		}
+	}
 
 	return nil
 }
-
 
 //
 // ping the viewserver periodically.
@@ -48,8 +123,39 @@ func (pb *PBServer) PutAppend(args *PutAppendArgs, reply *PutAppendReply) error 
 //   manage transfer of state from primary to new backup.
 //
 func (pb *PBServer) tick() {
+	pb.mu.Lock()
+	defer pb.mu.Unlock()
 
-	// Your code here.
+	pb.UpdateViewService()
+}
+
+func (pb *PBServer) UpdateViewService() {
+	view, _ := pb.vs.Ping(pb.view.Viewnum)
+
+	if view != pb.view {
+		pb.view = view
+
+		if pb.IsViewPrimary() && pb.ViewHasBackup() {
+			args := &SetStateArgs{State: pb.state, Requests: pb.requests}
+			var reply SetStateReply
+			call(pb.view.Backup, "PBServer.SetState", args, &reply)
+		}
+	}
+}
+
+func (pb *PBServer) SetState(args *SetStateArgs, reply *SetStateReply) error {
+	pb.mu.Lock()
+	defer pb.mu.Unlock()
+
+	if !pb.IsViewPrimary() {
+		pb.state = args.State
+		pb.requests = args.Requests
+		reply.Err = OK
+	} else {
+		reply.Err = ErrWrongServer
+	}
+
+	return nil
 }
 
 // tell the server to shut itself down.
@@ -59,12 +165,14 @@ func (pb *PBServer) kill() {
 	pb.l.Close()
 }
 
-
 func StartServer(vshost string, me string) *PBServer {
 	pb := new(PBServer)
 	pb.me = me
 	pb.vs = viewservice.MakeClerk(me, vshost)
-	// Your pb.* initializations here.
+	// TODO: Your pb.* initializations here.
+	pb.view = viewservice.View{0, "", ""}
+	pb.state = make(map[string]string)
+	pb.requests = make(map[int64]int64)
 
 	rpcs := rpc.NewServer()
 	rpcs.Register(pb)

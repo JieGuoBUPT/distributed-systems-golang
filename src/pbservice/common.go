@@ -4,15 +4,22 @@ const (
 	OK             = "OK"
 	ErrNoKey       = "ErrNoKey"
 	ErrWrongServer = "ErrWrongServer"
+	PutOp          = "Put"
+	AppendOp       = "Append"
 )
 
 type Err string
+type Op string
 
 // Put or Append
 type PutAppendArgs struct {
 	Key   string
 	Value string
-	// You'll have to add definitions here.
+	// TODO: You'll have to add definitions here.
+	Op       Op
+	Seq      int64
+	ClientId int64
+	ToBackup bool
 
 	// Field names must start with capital letters,
 	// otherwise RPC will break.
@@ -24,7 +31,10 @@ type PutAppendReply struct {
 
 type GetArgs struct {
 	Key string
-	// You'll have to add definitions here.
+	// TODO: You'll have to add definitions here.
+	Seq      int64
+	ClientId int64
+	ToBackup bool
 }
 
 type GetReply struct {
@@ -32,5 +42,12 @@ type GetReply struct {
 	Value string
 }
 
+// TODO: Your RPC definitions here.
+type SetStateArgs struct {
+	State    map[string]string
+	Requests map[int64]int64
+}
 
-// Your RPC definitions here.
+type SetStateReply struct {
+	Err Err
+}
