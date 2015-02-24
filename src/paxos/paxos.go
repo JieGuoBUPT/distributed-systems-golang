@@ -33,7 +33,7 @@ import "time"
 import "math"
 
 const Debug = 1
-const WaitTime = time.Nanosecond
+const WaitTime = 100 * time.Millisecond
 
 func shorten(in interface{}) string {
 	val := fmt.Sprintf("%+v", in)
