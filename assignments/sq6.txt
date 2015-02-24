@@ -1,0 +1,3 @@
+I understand that Raft made design decisions to prioritize understandability, but am curious about under what circumstances Raft's tradeoffs in terms of network transactions and disk writes still yielf a more performant overall system.
+
+Are there any analyses on performance of Paxos vs Raft in real-world systems?

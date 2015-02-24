@@ -1,0 +1,9 @@
+Russ Cox is one of the leads on the Go project. What do you like best about Go? Why? Would you want to change anything in the language? If so, what and why?
+
+---
+
+I really like how little overhead there is in using Go for concurrent network programming. Go also compiles super quickly compared to other languages. 
+
+I would really like for Go to have a better system for error handling. Passing errors through return values makes sense, but instead of passing errors WITH results, why doesn't Go allow developers to return either an error OR a result by using variant types?
+
+Additionally, the lack of generics is relatively troublesome. Having to cast interface{} throughout your code means that you lose on readability and at the same time lose benefits of static typing by passing errors off until runtime. Generics would also be very useful for creating your own types.
