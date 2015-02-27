@@ -1,0 +1,3 @@
+HARP is faster than a standard NFS because even though it replicates the data, it removes disk accesses from the critical path, replacing them with communication of operations over a high speed network. The log resides in volatile memory and relies on a write-behind strategy to queue disk operations in the background.
+
+Certain NFS operations may be faster on standard NFS implementations, particularly operations that exceed the size of the log (I believe 2MB). Because HARP commits the log to disk when it becomes too large, having too many big write messages in a row will result in the disk operations no longer being able to take place in the background.

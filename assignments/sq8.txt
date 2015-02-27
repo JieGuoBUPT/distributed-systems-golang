@@ -1,0 +1,1 @@
+I get the whole point of HARP is that the machines are right next to each other in order to take advantage of network transfers that are faster than disk writes. In a real environment, how would you deal with replication of data for off-site backups?
