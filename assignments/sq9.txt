@@ -1,0 +1,3 @@
+I liked how the authors evaluates their approaches using three distributed algorithms and concluded that their shared virtual memory was practical. An issue with this however, is that since the paper was published, network, disk, and processor speeds have evolved greatly -- and not necessarily with the same scale.
+
+I would like to see the analysis redone given a more modern processor:network ratio and on a realistic rather than a scientific workload (maybe using something like YCSB). It's possible that something like a distributed read emphasized database might be a more reasonable approach to the problem today, but it'd be nice to see a more mathematical analysis.
