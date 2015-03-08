@@ -3,12 +3,16 @@ package kvpaxos
 import "net/rpc"
 import "crypto/rand"
 import "math/big"
+import "time"
+import "math/rand"
 
 import "fmt"
 
 type Clerk struct {
 	servers []string
 	// You will have to modify this struct.
+	id  int64
+	seq int64
 }
 
 func nrand() int64 {
@@ -22,6 +26,8 @@ func MakeClerk(servers []string) *Clerk {
 	ck := new(Clerk)
 	ck.servers = servers
 	// You'll have to add code here.
+	ck.id = nrand()
+	ck.seq = 0
 	return ck
 }
 
@@ -65,19 +71,69 @@ func call(srv string, rpcname string,
 //
 func (ck *Clerk) Get(key string) string {
 	// You will have to modify this function.
-	return ""
+	ck.seq++
+	server := rand.Int() % len(ck.servers)
+
+	args := &GetArgs{Key: key, Seq: ck.seq, ClientId: ck.id}
+	var reply GetReply
+
+	to := InitialBackoff
+	for {
+		ok := call(ck.servers[server], "KVPaxos.Get", args, &reply)
+
+		if ok && reply.Err == OK {
+			DPrintf("client %d, seq %d received from server %d get reply! OK: %t", ck.id, ck.seq, server, ok)
+			return
+		}
+
+		DPrintf("client %d, seq %d received from server %d failed get reply! OK: %t", ck.id, ck.seq, server, ok)
+
+		time.Sleep(to)
+		if to < MaxBackoff {
+			to *= 2
+		}
+
+		server = (server + 1) % len(ck.servers)
+		DPrintf("client %d, seq %d trying get again with server %d", ck.id, ck.seq, server)
+	}
+	return reply.Value
 }
 
 //
 // shared by Put and Append.
 //
-func (ck *Clerk) PutAppend(key string, value string, op string) {
+func (ck *Clerk) PutAppend(key string, value string, op Op) {
 	// You will have to modify this function.
+	ck.seq++
+	server := rand.Int() % len(ck.servers)
+
+	args := &PutAppendArgs{Key: key, Value: value, Op: op, Seq: ck.seq, ClientId: ck.id}
+	var reply PutAppendReply
+
+	to := InitialBackoff
+	for {
+		ok := call(ck.servers[server], "KVPaxos.PutAppend", args, &reply)
+
+		if ok && reply.Err == OK {
+			DPrintf("client %d, seq %d received from server %d put reply! OK: %t", ck.id, ck.seq, server, ok)
+			return
+		}
+
+		DPrintf("client %d, seq %d received from server %d failed put reply! OK: %t", ck.id, ck.seq, server, ok)
+
+		time.Sleep(to)
+		if to < MaxBackoff {
+			to *= 2
+		}
+
+		server = (server + 1) % len(ck.servers)
+		DPrintf("client %d, seq %d trying put again with server %d", ck.id, ck.seq, server)
+	}
 }
 
 func (ck *Clerk) Put(key string, value string) {
-	ck.PutAppend(key, value, "Put")
+	ck.PutAppend(key, value, PutOp)
 }
-func (ck *Clerk) Append(key string, value string) {
-	ck.PutAppend(key, value, "Append")
+func (ck *Clerk) Append(key string, value Op) {
+	ck.PutAppend(key, value, AppendOp)
 }
