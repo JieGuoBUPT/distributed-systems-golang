@@ -1,0 +1,1 @@
+I am not super sure where the locks themselves are maintained... Does each process gets its own local copy and then synchronize them with other processes somehow? Or is there a centralized mechanism for managing the locks?

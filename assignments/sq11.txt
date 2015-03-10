@@ -1,0 +1,3 @@
+Is Ficus (or anything similar to it) actually used in any systems today?
+
+When I think file synchronization, my mind jumps to rsync. Does rsync use concepts like version vectors or is it just implemented completely differently?

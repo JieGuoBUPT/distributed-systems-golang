@@ -1,0 +1,1 @@
+In the case where two replicas are partitioned, one modifies the file, and then the partitions are merged, Ficus will compare version vectors between A and B prior to reconciliation. It will detect that A and B's version vectors differ by only one, and effectively update B's "foo" to match that of A -- possibly through the use of a resolver.
