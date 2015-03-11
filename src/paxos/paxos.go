@@ -33,7 +33,7 @@ import "math/rand"
 import "time"
 import "math"
 
-const Debug = 1
+const Debug = 0
 const WaitTime = 100 * time.Millisecond
 
 var log_mu sync.Mutex
