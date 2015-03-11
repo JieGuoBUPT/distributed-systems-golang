@@ -4,7 +4,6 @@ import "net/rpc"
 import "crypto/rand"
 import "math/big"
 import "time"
-import "math/rand"
 
 import "fmt"
 
@@ -12,7 +11,7 @@ type Clerk struct {
 	servers []string
 	// You will have to modify this struct.
 	id  int64
-	seq int64
+	seq int
 }
 
 func nrand() int64 {
@@ -73,7 +72,7 @@ func call(srv string, rpcname string,
 func (ck *Clerk) Get(key string) string {
 	// You will have to modify this function.
 	ck.seq++
-	server := rand.Int() % len(ck.servers)
+	server := int(nrand()) % len(ck.servers)
 
 	args := &GetArgs{Key: key, Seq: ck.seq, ClientId: ck.id}
 	var reply GetReply
@@ -84,7 +83,7 @@ func (ck *Clerk) Get(key string) string {
 
 		if ok && reply.Err == OK {
 			DPrintf("client %d, seq %d received from server %d get reply! OK: %t", ck.id, ck.seq, server, ok)
-			return
+			break
 		}
 
 		DPrintf("client %d, seq %d received from server %d failed get reply! OK: %t", ck.id, ck.seq, server, ok)
@@ -103,12 +102,12 @@ func (ck *Clerk) Get(key string) string {
 //
 // shared by Put and Append.
 //
-func (ck *Clerk) PutAppend(key string, value string, op Op) {
+func (ck *Clerk) PutAppend(key string, value string, op OpType) {
 	// You will have to modify this function.
 	ck.seq++
-	server := rand.Int() % len(ck.servers)
+	server := int(nrand()) % len(ck.servers)
 
-	args := &PutAppendArgs{Key: key, Value: value, Op: op, Seq: ck.seq, ClientId: ck.id}
+	args := &PutAppendArgs{Key: key, Value: value, OpType: op, Seq: ck.seq, ClientId: ck.id}
 	var reply PutAppendReply
 
 	to := InitialBackoff
@@ -135,6 +134,6 @@ func (ck *Clerk) PutAppend(key string, value string, op Op) {
 func (ck *Clerk) Put(key string, value string) {
 	ck.PutAppend(key, value, PutOp)
 }
-func (ck *Clerk) Append(key string, value Op) {
+func (ck *Clerk) Append(key string, value string) {
 	ck.PutAppend(key, value, AppendOp)
 }
