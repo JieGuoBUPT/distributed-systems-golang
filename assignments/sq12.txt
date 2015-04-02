@@ -1,0 +1,3 @@
+I get the general idea of Bayou and can imagine what the RPCs would look like for something as simple as meeting times with alternate time proposals, but am a bit confused about how RPCs would look for something with significantly more advanced dependency checks and merge procedures (such as a distributed filesystem).
+
+Does Bayou just need to be highly specific to the environment it's being used in? Are there real implementations of general-purpose Bayou online that might help with understanding how to effectively black-box Bayou?

@@ -1,0 +1,10 @@
+Suppose we build a distributed filesystem using Bayou, and the system has a copy operation. Initially, file A contains "foo" and file B contains "bar". On one node, a user copies file A to file B, overwriting the old contents of B. On another node, a user copies file B to file A. After both operations are committed, we want both files to contain "foo" or for both files to contain "bar".
+
+Sketch a dependency check and merge procedure for the copy operation that makes this work. How does Bayou ensure that all the nodes agree about whether A and B contain "foo" or "bar"?
+
+
+---
+
+One possibilitiy is that the copy operation has dependency checks that ensure that (1) both files exist and (2) the contents of the file being copied match a given string (in this case "foo" when copying file A to file B, and "bar" when vice versa). The merge operation could then abort if these dependencies are not met, and read the contents of the source file and copy it into the destination if the dependencies are met.
+
+Bayou will eventually agree on the consistent global ordering for the update log which, when combined with the above dependency checks, will ensure that all nodes agree that both files contain either "foo" or "bar". Whichever of the two operations appear first in the log will occur, and the other will not.

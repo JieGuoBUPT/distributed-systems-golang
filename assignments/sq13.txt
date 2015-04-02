@@ -1,0 +1,3 @@
+ It seems that with shared memory, workers could have some knowledge about other workers' tasks, which could prove useful to deal with stragglers.
+
+ Are there modifications to MapReduce that take advantage of shared memory?

@@ -1,0 +1,3 @@
+How soon after it receives the first file of intermediate data can a reduce worker start calling the application's Reduce function? Explain your answer.
+
+The reduce worker contacts every map worker via RPCs to get the intermediate data that was targeted for its partition. It then needs to sort all of the keys across the intermediate data files. Thus, after receiving the first file of intermediate data, the reduce worker must still wait for all the RPCs to return data before it can begin calling the Reduce function.

@@ -1,0 +1,3 @@
+What applications can Spark support well that MapReduce/Hadoop cannot support?
+
+Because Spark keeps data in memory between stages rather than persisting back to disk/HDFS, iterative computations -- which have multiple stages which each touch the same data -- are much more efficient with Spark than with MapReduce/Hadoop. This means that applications like machine learning which primarily use iterative computations, are much better supported in Spark than MapReduce/Hadoop. Spark also supports SQL queries, streaming data, and complex analytics like graph algorithms.
