@@ -70,9 +70,22 @@ func (sm *ShardMaster) Poll(seq int) interface{} {
 }
 
 func (sm *ShardMaster) LogOperation(operation Op) int {
-	// TODO: something
+	var seq = sm.nextSeq
 
-	return nil
+	for {
+		sm.px.Start(seq, operation)
+
+		var val Op
+		val = sm.Poll(seq).(Op)
+
+		if val.Id == operation.Id {
+			break
+		}
+
+		seq++
+	}
+
+	return seq
 }
 
 func (sm *ShardMaster) ProcessLog(stop int) {
