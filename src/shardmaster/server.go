@@ -13,6 +13,13 @@ import "syscall"
 import "encoding/gob"
 import "math/rand"
 
+func nrand() int64 {
+	max := big.NewInt(int64(1) << 62)
+	bigx, _ := rand.Int(rand.Reader, max)
+	x := bigx.Int64()
+	return x
+}
+
 type ShardMaster struct {
 	mu         sync.Mutex
 	l          net.Listener
@@ -22,34 +29,122 @@ type ShardMaster struct {
 	px         *paxos.Paxos
 
 	configs []Config // indexed by config num
+	nextSeq int
 }
 
+type OpType string
+
+const (
+	Join  OpType = "Join"
+	Leave OpType = "Leave"
+	Move  OpType = "Move"
+	Query OpType = "Query"
+)
 
 type Op struct {
 	// Your data here.
+	Id      string
+	Type    OpType
+	GID     int64
+	Servers []string // used if Type == Join
+	Shard   int      // used if Type == Move
 }
 
+func (sm *ShardMaster) Poll(seq int) interface{} {
+	// TODO: something
+
+	return nil
+}
+
+func (sm *ShardMaster) LogOperation(operation Op) int {
+	// TODO: something
+
+	return nil
+}
+
+func (sm *ShardMaster) ProcessLog(stop int) {
+	// TODO: something
+
+	return nil
+}
 
 func (sm *ShardMaster) Join(args *JoinArgs, reply *JoinReply) error {
-	// Your code here.
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	var operation = Op{}
+	operation.Id = nrand()
+	operation.Type = Join
+	operation.GID = args.GID
+	operation.Servers = args.Servers
+
+	var currentSeq int = sm.LogOperation(operation)
+	sm.ProcessLog(currentSeq)
+
+	sm.px.Done(currentSeq)
+	sm.nextSeq = currentSeq + 1
 
 	return nil
 }
 
 func (sm *ShardMaster) Leave(args *LeaveArgs, reply *LeaveReply) error {
-	// Your code here.
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	var operation = Op{}
+	operation.Id = nrand()
+	operation.Type = Leave
+	operation.GID = args.GID
+
+	var currentSeq int = sm.LogOperation(operation)
+	sm.ProcessLog(currentSeq)
+
+	sm.px.Done(currentSeq)
+	sm.nextSeq = currentSeq + 1
 
 	return nil
 }
 
 func (sm *ShardMaster) Move(args *MoveArgs, reply *MoveReply) error {
-	// Your code here.
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	var operation = Op{}
+	operation.Id = nrand()
+	operation.Type = Move
+	operation.GID = args.GID
+	operation.Shard = args.Shard
+
+	var currentSeq int = sm.LogOperation(operation)
+	sm.ProcessLog(currentSeq)
+
+	sm.px.Done(currentSeq)
+	sm.nextSeq = currentSeq + 1
 
 	return nil
 }
 
 func (sm *ShardMaster) Query(args *QueryArgs, reply *QueryReply) error {
-	// Your code here.
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	var operation = Op{}
+	operation.Id = nrand()
+	operation.Type = Query
+
+	var currentSeq int = sm.LogOperation(operation)
+	sm.ProcessLog(currentSeq)
+
+	sm.px.Done(currentSeq)
+	sm.nextSeq = currentSeq + 1
+
+	var config_num int = args.Num
+
+	if config_num < 0 || config_num >= len(sm.configs) {
+		config_num = len(sm.configs) - 1
+	}
+
+	reply.Config = sm.configs[config_num]
 
 	return nil
 }
