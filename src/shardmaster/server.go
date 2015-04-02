@@ -52,6 +52,19 @@ type Op struct {
 
 func (sm *ShardMaster) Poll(seq int) interface{} {
 	// TODO: something
+	to := 10 * time.Millisecond
+	for {
+		decided, value := sm.px.Status(seq)
+
+		if decided {
+			return value
+		}
+
+		time.Sleep(to)
+		if to < 10*time.Second {
+			to *= 2
+		}
+	}
 
 	return nil
 }
