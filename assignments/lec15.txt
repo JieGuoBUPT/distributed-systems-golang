@@ -1,0 +1,12 @@
+Suppose a Spanner server's TT.now() returns correct information, but the uncertainty is large. For example, suppose the absolute time is 10:15:30, and TT.now() returns the interval [10:15:20,10:15:40]. That interval is correct in that it contains the absolute time, but the error bound is 10 seconds. See Section 3 for an explanation TT.now(). What bad effect will a large error bound have on Spanner's operation? Give a specific example.
+
+
+---
+
+Suppose three clients each attempt to execute operations in the following order:
+
+- C_1 attempts to read k_1,
+- C_2 attempts to write to k_1, and
+- C_3 attempts to read k_1 as well. 
+
+Because the error bound is so large, C_3 will have to block and wait 10 seconds until C_2's write's error bound expires so that the system can ensure that no other writes took place between C_2's write and C_3's read. This is a pretty bad thing.
