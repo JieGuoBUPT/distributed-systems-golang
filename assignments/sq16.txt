@@ -1,0 +1,1 @@
+Does Facebook use any special hardware for their cacheing system? I know memcached is fast because it's all in-RAM, but with the scale that Facebook deals with, would it be better to use cheaper flash storage like SSDs?

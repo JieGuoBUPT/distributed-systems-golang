@@ -1,0 +1,7 @@
+Explain why it would be a bad idea for writing clients to delete keys from Gutter servers.
+
+---
+
+It would be a bad idea for writing clients to delete keys from Gutter servers because they are already only used as fallback mechanisms in the event of other cache failures. If writing clients deleted keys from gutter servers, the gutters themselves could start another surge of traffic to the backend services of the already failing system. 
+
+In order to shield the backend services, entries in Gutter expire quickly to obviate Gutter invalidations, allowing Gutter servers to limit the load on backend services at the cost of slightly stale data.
