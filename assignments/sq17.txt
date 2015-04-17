@@ -1,0 +1,1 @@
+I read about Google's BigTable last year for 6.830, and I'm a little confused about the differences betwen PNUTS and BigTable... Are there any real differences?

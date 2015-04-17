@@ -1,0 +1,3 @@
+The parameters W, R, N, and the conflict resolution patterns are left for user of Dynamo to decide. Although this provides flexibility, it may take a lot of time and effort for users to tune the system to find out the best W, R, N and conflict resolution strategy.
+
+Is there a way to figure out the best values for these parameters besides experimentation?
