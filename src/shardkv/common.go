@@ -1,46 +1,53 @@
 package shardkv
 
+import "time"
+
 //
 // Sharded key/value server.
 // Lots of replica groups, each running op-at-a-time paxos.
 // Shardmaster decides which group serves each shard.
 // Shardmaster may change shard assignment from time to time.
 //
-// You will have to modify these definitions.
-//
 
 const (
 	OK            = "OK"
 	ErrNoKey      = "ErrNoKey"
 	ErrWrongGroup = "ErrWrongGroup"
+
+	ErrBadConfig   = "ErrBadConfig"
+	ErrBadReconfig = "ErrBadReconfig"
 )
 
 type Err string
 
 const (
-	Get         = "Get"
-	Put         = "Put"
-	PutAppend   = "PutAppend"
-	Reconfigure = "Reconfigure"
+	GetOp        = "Get"
+	PutOp        = "Put"
+	AppendOp     = "Append"
+	FetchShardOp = "FetchShard"
+	ReconfigOp   = "Reconfigure"
 )
 
 type OpType string
 
+const (
+	InitialBackoff = 10 * time.Millisecond
+	MaxBackoff     = 10 * time.Second
+)
+
 type PutAppendArgs struct {
 	Key   string
 	Value string
-	Op    OpType // "Put" or "PutAppend"
-	// You'll have to add definitions here.
-	// Field names must start with capital letters,
-	// otherwise RPC will break.
+	Type  OpType // "Put" or "Append"
 
-	Id int64
+	ClientId      int64
+	TransactionId int64
 }
 
 type GetArgs struct {
-	Key string
-	// You'll have to add definitions here.
-	Id int64
+	Key           string
+	ClientId      int64
+	TransactionId int64
 }
 
 type Reply struct {
@@ -48,13 +55,13 @@ type Reply struct {
 	Value string
 }
 
-type FetchArgs struct {
+type FetchShardArgs struct {
 	Config int
 	Shard  int
 }
 
-type FetchReply struct {
-	Err      Err
+type FetchShardReply struct {
 	KvData   map[string]string
-	PreReply map[int64]string
+	LastSeen map[int64]int64
+	Err      Err
 }

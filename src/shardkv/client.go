@@ -100,8 +100,8 @@ func (ck *Clerk) Get(key string) string {
 			for _, srv := range servers {
 				args := &GetArgs{}
 				args.Key = key
-				args.TransactionID = tid
-				args.ClientID = ck.clientID
+				args.TransactionId = tid
+				args.ClientId = ck.clientId
 
 				var reply Reply
 				ok := call(srv, "ShardKV.Get", args, &reply)
@@ -142,9 +142,9 @@ func (ck *Clerk) PutAppend(key string, value string, op OpType) {
 				args := &PutAppendArgs{}
 				args.Key = key
 				args.Value = value
-				args.Op = op
-				args.TransactionID = tid
-				args.ClientID = ck.clientID
+				args.Type = op
+				args.TransactionId = tid
+				args.ClientId = ck.clientId
 
 				var reply Reply
 				ok := call(srv, "ShardKV.PutAppend", args, &reply)
@@ -165,8 +165,8 @@ func (ck *Clerk) PutAppend(key string, value string, op OpType) {
 }
 
 func (ck *Clerk) Put(key string, value string) {
-	ck.PutAppend(key, value, Put)
+	ck.PutAppend(key, value, PutOp)
 }
 func (ck *Clerk) Append(key string, value string) {
-	ck.PutAppend(key, value, Append)
+	ck.PutAppend(key, value, AppendOp)
 }
