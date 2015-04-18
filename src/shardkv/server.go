@@ -14,7 +14,6 @@ import "encoding/gob"
 import "math/rand"
 import "shardmaster"
 
-
 const Debug = 0
 
 func DPrintf(format string, a ...interface{}) (n int, err error) {
@@ -24,11 +23,18 @@ func DPrintf(format string, a ...interface{}) (n int, err error) {
 	return
 }
 
-
 type Op struct {
 	// Your definitions here.
-}
+	Type      OpType
+	Id        int64
+	Key       string
+	Value     string
+	ConfigNum int
 
+	// for reconfiguration
+	KvData   map[string]string
+	PreReply map[int64]string
+}
 
 type ShardKV struct {
 	mu         sync.Mutex
@@ -41,11 +47,13 @@ type ShardKV struct {
 
 	gid int64 // my replica group ID
 
-	// Your definitions here.
+	config          shardmaster.Config
+	kvData          map[string]string
+	preReply        map[int64]string
+	maxProcessedSeq int
 }
 
-
-func (kv *ShardKV) Get(args *GetArgs, reply *GetReply) error {
+func (kv *ShardKV) Get(args *GetArgs, reply *Reply) error {
 	// Your code here.
 	return nil
 }
@@ -113,7 +121,6 @@ func StartServer(gid int64, shardmasters []string,
 	rpcs.Register(kv)
 
 	kv.px = paxos.Make(servers, me, rpcs)
-
 
 	os.Remove(servers[me])
 	l, e := net.Listen("unix", servers[me])
