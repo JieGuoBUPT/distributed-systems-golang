@@ -9,10 +9,9 @@ import "crypto/rand"
 import "math/big"
 
 type Clerk struct {
-	mu     sync.Mutex // one RPC at a time
-	sm     *shardmaster.Clerk
-	config shardmaster.Config
-	// You'll have to modify Clerk.
+	mu       sync.Mutex // one RPC at a time
+	sm       *shardmaster.Clerk
+	config   shardmaster.Config
 	clientId int64
 }
 
@@ -26,7 +25,6 @@ func nrand() int64 {
 func MakeClerk(shardmasters []string) *Clerk {
 	ck := new(Clerk)
 	ck.sm = shardmaster.MakeClerk(shardmasters)
-	// You'll have to modify MakeClerk.
 	ck.clientId = nrand()
 	return ck
 }
@@ -88,17 +86,23 @@ func (ck *Clerk) Get(key string) string {
 	ck.mu.Lock()
 	defer ck.mu.Unlock()
 
-	// You'll have to modify Get().
-	args := &GetArgs{key, nrand()}
+	tid := nrand()
 
 	for {
 		shard := key2shard(key)
+
 		gid := ck.config.Shards[shard]
+
 		servers, ok := ck.config.Groups[gid]
 
 		if ok {
 			// try each server in the shard's replication group.
 			for _, srv := range servers {
+				args := &GetArgs{}
+				args.Key = key
+				args.TransactionID = tid
+				args.ClientID = ck.clientID
+
 				var reply Reply
 				ok := call(srv, "ShardKV.Get", args, &reply)
 				if ok && (reply.Err == OK || reply.Err == ErrNoKey) {
@@ -123,17 +127,25 @@ func (ck *Clerk) PutAppend(key string, value string, op OpType) {
 	ck.mu.Lock()
 	defer ck.mu.Unlock()
 
-	// You'll have to modify PutAppend().
-	args := &PutArgs{key, value, op, nrand()}
+	tid := nrand()
 
 	for {
 		shard := key2shard(key)
+
 		gid := ck.config.Shards[shard]
+
 		servers, ok := ck.config.Groups[gid]
 
 		if ok {
 			// try each server in the shard's replication group.
 			for _, srv := range servers {
+				args := &PutAppendArgs{}
+				args.Key = key
+				args.Value = value
+				args.Op = op
+				args.TransactionID = tid
+				args.ClientID = ck.clientID
+
 				var reply Reply
 				ok := call(srv, "ShardKV.PutAppend", args, &reply)
 				if ok && reply.Err == OK {
@@ -156,5 +168,5 @@ func (ck *Clerk) Put(key string, value string) {
 	ck.PutAppend(key, value, Put)
 }
 func (ck *Clerk) Append(key string, value string) {
-	ck.PutAppend(key, value, PutAppend)
+	ck.PutAppend(key, value, Append)
 }
