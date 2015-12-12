@@ -1,0 +1,5 @@
+Starting at the bottom-left of page 310, the paper mentions that a participant writes new versions to disk twice: once before replying to a prepare message, and once after receiving a commit message. Why are both writes necessary? What could go wrong if participants replied to the prepare without writing the disk, instead only writing the disk after receiving a commit message?
+
+---
+
+If there weren't two writes, a participant A could send a prepare message to participants B and C and get replies from both. Participant C could then crash, and participant A would send a commit message to participant C, and both A and C would write the final value to disk. B could then recover and have a different participant send a message that depended on the mesasge from A. 

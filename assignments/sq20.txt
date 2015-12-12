@@ -1,0 +1,1 @@
+Is 2PC actually used in large-scale production systems? It seems like it has the benefit of low latency, but all of that is offset by fragility in the face of participant machine crashes.
